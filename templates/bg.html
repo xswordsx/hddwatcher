@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Нивата на диска са критични</title>
+    <style type="text/css">
+        td {
+            float: left;
+            height: 2rem;
+            line-height: 2rem;
+            color: #000;
+        }
+
+        .detail {
+            font-size: 0.9rem;
+            font-weight: bolder;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body style="margin: 0 auto; padding: 0; min-width: 100%; font-family: sans-serif;">
+    <p>
+        Дисковото пространсвто
+        на сървър <span class="detail">{{ .Hostname }}</span>
+        диск <span class="detail">{{ .Letter }}</span>
+        е в критични нива!
+    </p>
+    <pre>
+Използвано: {{ .Used }}
+Свободно:   {{ .Free }} ({{ round .FreePercent }}% оставащи)
+    </pre>
+    <table style="border:1px solid #d3d3d3; text-align:center" cellpadding="0" cellspacing="0" width="500">
+        <tr>
+            <td bgcolor="#add8ea" style="background-color: #add8ea;" width="{{ .UsedPercent }}%%">
+                {{ .Used }}
+            </td>
+            <td bgcolor="#e0e0e0" style="background-color: #e0e0e0;" width="{{ .FreePercent }}%%">
+                {{ .Free }}
+            </td>
+        </tr>
+    </table>
+    <p>Моля, освободете място незабавно!</p>
+</body>
+
+</html>
