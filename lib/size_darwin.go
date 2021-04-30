@@ -1,5 +1,3 @@
-// +build (NOT windows), (NOT linux)
-
 package lib
 
 import "fmt"
