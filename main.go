@@ -105,7 +105,10 @@ func main() {
 		FreePercent: 100.0 * float32(free) / float32(total),
 	}
 	i.UsedPercent = 100 - i.FreePercent
-	t.Execute(&b, i)
+
+	if err := t.Execute(&b, i); err != nil {
+		logger.Fatalf("Cannot execute template %q: %v", t.Name(), err)
+	}
 
 	auth := smtp.PlainAuth("", cfg.Mail.Username, cfg.Mail.Password, cfg.Mail.Server)
 	base := strings.Join([]string{
