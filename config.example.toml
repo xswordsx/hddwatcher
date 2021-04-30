@@ -1,14 +1,26 @@
 [drive]
-# Limit (in bytes) below which an email will be sent to all
-# interested parties.
-limit = 10_000_000_000 # GB
-# Windows expects invocation paths to end with '\'
-letter = "C:\\"
+# Limit (in bytes) below which emails will be sent.
+limit_bytes = 10_000_000_000 # GB
+
+# Which path should be watched for space.
+#
+# NOTE: Windows expects invocation paths to end with '\'
+path = "/"
+
 
 [mail]
-sender = "Server watcher"
+# Language of the email (this does not affect loggine).
+lang = "bg"
+
+# Basic authentication
 username = "your.email@mail.com"
 password = "your password in plain-text"
-recepient_list = [ "me@mail.com", "admin@server.com" ]
+
+# Mail Server
 server = "smtp.gmail.com"
 port = 587
+
+# Human-readable name of the email sernder.
+sender = "Server watcher"
+# Who should receive the email.
+recepient_list = [ "me@mail.com", "admin@server.com" ]

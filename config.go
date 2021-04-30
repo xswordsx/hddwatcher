@@ -29,6 +29,9 @@ type mailConfig struct {
 
 	// Who should receive the email.
 	RecepientList []string `toml:"recepient_list"`
+
+	// Language of the email (this does not affect loggine).
+	Language string `toml:"lang"`
 }
 
 type watchConfig struct {
