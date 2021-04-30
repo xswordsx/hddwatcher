@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/dustin/go-humanize"
-	"github.com/pelletier/go-toml"
 )
 
 var configFile string
@@ -20,25 +19,6 @@ var configFile string
 func init() {
 	flag.StringVar(&configFile, "c", "config.toml", "Config file (TOML format)")
 	flag.Parse()
-}
-
-type config struct {
-	Mail  mailConfig  `toml:"mail"`
-	Drive watchConfig `toml:"drive"`
-}
-
-type mailConfig struct {
-	Sender        string   `toml:"sender"`
-	Username      string   `toml:"username"`
-	Password      string   `toml:"password"`
-	RecepientList []string `toml:"recepient_list"`
-	Server        string   `toml:"server"`
-	Port          uint     `toml:"port"`
-}
-
-type watchConfig struct {
-	Letter string `toml:"letter"`
-	Limit  int64  `toml:"limit"`
 }
 
 type mailInput struct {
@@ -57,13 +37,20 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	cfgData, err := ioutil.ReadFile(configFile)
+	absPath, _ := filepath.Abs(configFile)
+	log.Printf("Reading config file %q", absPath)
+	cfg, err := configFromFile(configFile)
 	if err != nil {
-		log.Fatalf("cannot read %q: %v", configFile, err)
+		log.Fatal(err)
 	}
-	cfg := config{}
-	if err := toml.Unmarshal(cfgData, &cfg); err != nil {
-		log.Fatalf("cannot unmarshal %q: %v", configFile, err)
+
+	log.Println("Validating configuration sanity")
+	acceptableLanguages := make([]string, 0, len(subjects))
+	for k := range subjects {
+		acceptableLanguages = append(acceptableLanguages, k[:])
+	}
+	if err := cfg.validate(acceptableLanguages); err != nil {
+		log.Fatal(err)
 	}
 
 	free, total, _, err := getSpace(cfg.Drive.Letter)
