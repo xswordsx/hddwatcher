@@ -16,10 +16,14 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-var configFile string
+var (
+	configFile   string
+	printVersion bool
+)
 
 func init() {
 	flag.StringVar(&configFile, "c", "config.toml", "Config file (TOML format)")
+	flag.BoolVar(&printVersion, "v", false, "Print version information and exit")
 	flag.Parse()
 }
 
@@ -34,6 +38,11 @@ type mailTemplateInput struct {
 }
 
 func main() {
+	if printVersion {
+		fmt.Printf("hddwatcher version %s built at %s commit %s\n", version, builtAt, commit)
+		return
+	}
+
 	logger := log.New(os.Stdout, "[hddwatcher] ", log.LstdFlags|log.Lmsgprefix)
 	// Read config
 	if configFile == "" {
