@@ -3,7 +3,9 @@
 *.exe~
 *.dll
 *.so
-*.dylib
+*.dylibo
+# Go build artifacts
+hddwatcher
 
 # Test binary, built with `go test -c`
 *.test
