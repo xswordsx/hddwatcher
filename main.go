@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"html/template"
-	"io/ioutil"
 	"log"
 	"net/smtp"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/xswordsx/hddwatcher/lib"
 
 	"github.com/dustin/go-humanize"
 )
@@ -53,7 +55,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	free, total, _, err := getSpace(cfg.Drive.Letter)
+	// Check disk space
+	log.Printf("Checking disk space for %q", cfg.Drive.Path)
+	_, total, free, err := lib.GetSpace(cfg.Drive.Path)
 	if err != nil {
 		// TODO
 		log.Fatal(err)
