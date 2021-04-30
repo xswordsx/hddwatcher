@@ -8,7 +8,6 @@ import (
 
 // GetSpace returns disk size information for the given drive (bytes).
 func GetSpace(drive string) (free int64, total int64, avail int64, err error) {
-	return 0, 0, 0, fmt.Errorf("Boom")
 	var stat unix.Statfs_t
 	err = unix.Statfs(drive, &stat)
 	if err != nil {
