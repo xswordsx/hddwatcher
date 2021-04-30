@@ -12,17 +12,20 @@ func GetSpace(drive string) (avail int64, total int64, free int64, err error) {
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("cannot load kernel32.dll: %w", err)
 	}
-	defer syscall.FreeLibrary(kernel32)
+	defer syscall.FreeLibrary(kernel32) // nolint: errcheck
 	GetDiskFreeSpaceEx, err := syscall.GetProcAddress(syscall.Handle(kernel32), "GetDiskFreeSpaceExW")
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("cannot find GetDiskFreeSpaceExW: %w", err)
 	}
-
+	strPtr, err := syscall.UTF16PtrFromString(drive)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("cannot create UTF16 pointer: %w", err)
+	}
 	lpFreeBytesAvailable := int64(0)
 	lpTotalNumberOfBytes := int64(0)
 	lpTotalNumberOfFreeBytes := int64(0)
 	ok, _, msg := syscall.Syscall6(uintptr(GetDiskFreeSpaceEx), 4,
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(drive))),
+		uintptr(unsafe.Pointer(strPtr)),
 		uintptr(unsafe.Pointer(&lpFreeBytesAvailable)),
 		uintptr(unsafe.Pointer(&lpTotalNumberOfBytes)),
 		uintptr(unsafe.Pointer(&lpTotalNumberOfFreeBytes)), 0, 0)
