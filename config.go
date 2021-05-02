@@ -36,7 +36,7 @@ type mailConfig struct {
 
 type watchConfig struct {
 	Path       string `toml:"path"`
-	LimitBytes int64  `toml:"limit_bytes"`
+	LimitBytes uint64 `toml:"limit_bytes"`
 }
 
 func configFromFile(configFile string) (*config, error) {

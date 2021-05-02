@@ -7,7 +7,7 @@ import (
 )
 
 // GetSpace returns disk size information for the given drive (bytes).
-func GetSpace(drive string) (avail int64, total int64, free int64, err error) {
+func GetSpace(drive string) (avail uint64, total uint64, free uint64, err error) {
 	kernel32, err := syscall.LoadLibrary("Kernel32.dll")
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("cannot load kernel32.dll: %w", err)
@@ -21,9 +21,9 @@ func GetSpace(drive string) (avail int64, total int64, free int64, err error) {
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("cannot create UTF16 pointer: %w", err)
 	}
-	lpFreeBytesAvailable := int64(0)
-	lpTotalNumberOfBytes := int64(0)
-	lpTotalNumberOfFreeBytes := int64(0)
+	lpFreeBytesAvailable := uint64(0)
+	lpTotalNumberOfBytes := uint64(0)
+	lpTotalNumberOfFreeBytes := uint64(0)
 	ok, _, msg := syscall.Syscall6(uintptr(GetDiskFreeSpaceEx), 4,
 		uintptr(unsafe.Pointer(strPtr)),
 		uintptr(unsafe.Pointer(&lpFreeBytesAvailable)),
