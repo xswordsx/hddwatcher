@@ -30,11 +30,14 @@ func init() {
 type mailTemplateInput struct {
 	Hostname string
 	Letter   string
+	Limit    string
 
 	Free, Total, Used string
 
 	UsedPercent float32
 	FreePercent float32
+
+	Version string
 }
 
 func main() {
@@ -74,12 +77,12 @@ func main() {
 		// TODO
 		logger.Fatal(err)
 	}
-	logger.Printf(" > Free space:  %s", humanize.Bytes(uint64(free)))
-	logger.Printf(" > Total space: %s", humanize.Bytes(uint64(total)))
+	logger.Printf(" > Free space:  %s", humanize.IBytes(uint64(free)))
+	logger.Printf(" > Total space: %s", humanize.IBytes(uint64(total)))
 	if cfg.Drive.LimitBytes < free {
 		logger.Printf(
 			"Limit (< %s on %q) not reached - skipping email notification",
-			humanize.Bytes(uint64(cfg.Drive.LimitBytes)),
+			humanize.IBytes(uint64(cfg.Drive.LimitBytes)),
 			cfg.Drive.Path,
 		)
 		logger.Println("Done")
@@ -88,8 +91,6 @@ func main() {
 
 	// MAIL
 
-	start := time.Now()
-	logger.Printf("Sending notification to %d recepients", len(cfg.Mail.RecepientList))
 	t := templates.Lookup(cfg.Mail.Language + ".html")
 	if t == nil {
 		log.Fatalf("no template for language %q", cfg.Mail.Language)
@@ -99,10 +100,12 @@ func main() {
 	i := mailTemplateInput{
 		Hostname:    hn,
 		Letter:      cfg.Drive.Path,
-		Free:        humanize.Bytes(uint64(free)),
-		Total:       humanize.Bytes(uint64(total)),
-		Used:        humanize.Bytes(uint64(total - free)),
+		Limit:       humanize.IBytes(cfg.Drive.LimitBytes),
+		Free:        humanize.IBytes(free),
+		Total:       humanize.IBytes(total),
+		Used:        humanize.IBytes(total - free),
 		FreePercent: 100.0 * float32(free) / float32(total),
+		Version:     version,
 	}
 	i.UsedPercent = 100 - i.FreePercent
 
@@ -110,10 +113,13 @@ func main() {
 		logger.Fatalf("Cannot execute template %q: %v", t.Name(), err)
 	}
 
+	start := time.Now()
+	logger.Printf("Sending notification to %d recepients", len(cfg.Mail.RecepientList))
 	auth := smtp.PlainAuth("", cfg.Mail.Username, cfg.Mail.Password, cfg.Mail.Server)
+	// The "To:" header is omited so that all recepients
+	// receive a Bcc.
 	base := strings.Join([]string{
 		fmt.Sprintf("From: %s", cfg.Mail.Sender),
-		fmt.Sprintf("To: %s", strings.Join(cfg.Mail.RecepientList, ",")),
 		fmt.Sprintf("Subject: " + subjects[cfg.Mail.Language]),
 		"Content-Type: text/html; charset=utf-8",
 		"",
@@ -126,5 +132,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error sending message: %v", err)
 	}
-	logger.Printf("Done (sending emails took %v)", time.Since(start))
+	logger.Printf("Sending emails took %v", time.Since(start))
+	logger.Printf("Done")
 }
