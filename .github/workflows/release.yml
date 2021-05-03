@@ -23,12 +23,10 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: false
+          draft: true
           prerelease: false
 
   build_assets:
-
-  release_assets:
     strategy:
       matrix:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
@@ -38,20 +36,28 @@ jobs:
            goarch: '386'
          - os: macos-latest
            goarch: arm
-    name: Release assets
+         - os: windows-latest
+           goarch: arm64
+    name: Build assets
     needs: create_release # we need to know the upload URL
     runs-on: ${{ matrix.os }} # we run many different builds
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set output path
+        run: echo OUTPUT_PATH="hddwatcher_$(go env GOOS)_$(go env GOARCH)_${GITHUB_REF:10}" >> $GITHUB_ENV
+        
       - uses: actions/setup-go@v2
         with:
           go-version: '^1.16'
 
       - name: Build binary
+        id: build_assets
+        env:
+          GOARCH: ${{ matrix.goarch }}
         run: >
-          GOARCH=${{ matrix.goarch}} go build -v
+          go build -v
           -o hddwatcher
           -ldflags='
           -X "main.version=${GITHUB_REF}"
@@ -67,7 +73,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}
+          asset_name: ${{ env.OUTPUT_PATH }}
           asset_path: ./hddwatcher
           asset_content_type: application/octet-stream
 
@@ -78,6 +84,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}.exe
+          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${GITHUB_REF}.exe
           asset_path: ./hddwatcher
           asset_content_type: application/octet-stream
