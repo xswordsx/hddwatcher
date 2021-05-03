@@ -1,0 +1,72 @@
+name: Go Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.*'
+      - test-*
+
+jobs:
+
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    # Note this. We are going to use that in further jobs.
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  release_assets:
+    strategy:
+      matrix:
+        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+        goarch: ['386', 'amd64', 'arm', 'arm64']
+    name: Release assets
+    needs: create_release # we need to know the upload URL
+    runs-on: ${{ matrix.os }} # we run many different builds
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build binary
+        run: >
+          GOARCH=${{ matrix.goarch}} go build -v
+          -o hddwatcher
+          -ldflags='
+          -X "main.version=${GITHUB_REF}"
+          -X "main.commit=${GITHUB_SHA}"
+          -X "main.builtAt=$(date)"
+          '
+          .
+
+      - name: Upload release assets *NIX
+        uses: actions/upload-release-asset@v1
+        if: matrix.os != 'windows-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}
+          asset_path: ./hddwatcher
+          asset_content_type: application/octet-stream
+
+      - name: Upload release assets Windows
+        uses: actions/upload-release-asset@v1
+        if: matrix.os == 'windows-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}.exe
+          asset_path: ./hddwatcher
+          asset_content_type: application/octet-stream
