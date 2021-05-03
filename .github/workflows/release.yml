@@ -7,28 +7,7 @@ on:
       - test-*
 
 jobs:
-
-  create_release:
-    name: Create release
-    runs-on: ubuntu-latest
-    # Note this. We are going to use that in further jobs.
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
   build_assets:
-
-  release_assets:
     strategy:
       matrix:
         os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
@@ -38,21 +17,31 @@ jobs:
            goarch: '386'
          - os: macos-latest
            goarch: arm
-    name: Release assets
-    needs: create_release # we need to know the upload URL
+         - os: windows-latest
+           goarch: arm64
+    name: Build assets
     runs-on: ${{ matrix.os }} # we run many different builds
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Set output path
+        run: echo OUTPUT_PATH="hddwatcher_$(go env GOOS)_$(go env GOARCH)_${GITHUB_REF:10}" >> $GITHUB_ENV
+        
+      - if:  matrix.os == 'windows-latest'
+        run: echo OUTPUT_PATH="hddwatcher_$(go env GOOS)_$(go env GOARCH)_${GITHUB_REF:10}.exe" >> $GITHUB_ENV
 
       - uses: actions/setup-go@v2
         with:
           go-version: '^1.16'
 
       - name: Build binary
+        id: build_assets
+        env:
+          GOARCH: ${{ matrix.goarch }}
         run: >
-          GOARCH=${{ matrix.goarch}} go build -v
-          -o hddwatcher
+          go build -v
+          -o "./${OUTPUT_PATH}"
           -ldflags='
           -X "main.version=${GITHUB_REF}"
           -X "main.commit=${GITHUB_SHA}"
@@ -60,24 +49,12 @@ jobs:
           '
           .
 
-      - name: Upload release assets *NIX
-        uses: actions/upload-release-asset@v1
-        if: matrix.os != 'windows-latest'
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}
-          asset_path: ./hddwatcher
-          asset_content_type: application/octet-stream
-
-      - name: Upload release assets Windows
-        uses: actions/upload-release-asset@v1
-        if: matrix.os == 'windows-latest'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: hddwatcher_${{ matrix.os }}_${{ matrix.goarch }}_${{ github.ref }}.exe
-          asset_path: ./hddwatcher
-          asset_content_type: application/octet-stream
+          draft: true
+          files: |
+            ${{ env.OUTPUT_PATH }}
+            ${{ env.OUTPUT_PATH }}.exe
